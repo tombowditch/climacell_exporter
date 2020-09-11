@@ -17,8 +17,6 @@ RUN strip target/x86_64-unknown-linux-musl/release/climacell_exporter
 FROM alpine
 WORKDIR /home/rust/
 
-COPY whois_servers.json .
-
 RUN apk add -U --no-cache ca-certificates
 
 COPY --from=builder /home/rust/target/x86_64-unknown-linux-musl/release/climacell_exporter .

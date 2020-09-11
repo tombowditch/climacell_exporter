@@ -13,9 +13,9 @@ Prometheus exporter for Climacell
 You can use environment variables instead of command line arguments
 
 ```
-* TOKEN
-* LAT
-* LON
+TOKEN=xxxxxyyyyyyzzzzz
+LAT=123
+LON=321
 ```
 
 # Alertmanager
