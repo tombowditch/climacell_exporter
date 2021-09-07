@@ -1,4 +1,6 @@
-FROM ekidd/rust-musl-builder:nightly-2020-06-23 as builder
+FROM ekidd/rust-musl-builder:stable as builder
+
+LABEL org.opencontainers.image.source https://github.com/tombowditch/climacell_exporter
 
 WORKDIR /home/rust/
 

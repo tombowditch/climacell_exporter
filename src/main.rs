@@ -9,21 +9,45 @@ use serde::{Deserialize, Serialize};
 extern crate prometheus;
 #[macro_use]
 extern crate lazy_static;
-extern crate serde_derive;
 extern crate tokio;
 
-#[derive(Serialize, Deserialize)]
-pub struct ClimacellResponse {
-    temp: ClimacellVal,
-    feels_like: ClimacellVal,
-    wind_speed: ClimacellVal,
-    humidity: ClimacellVal,
-    precipitation: ClimacellVal,
+#[derive(Serialize, Deserialize, Clone)]
+pub struct TomorrowWeatherApiResponse {
+    data: Data,
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct ClimacellVal {
-    value: f64,
+#[derive(Serialize, Deserialize, Clone)]
+pub struct Data {
+    timelines: Vec<Timeline>,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct Timeline {
+    timestep: String,
+    #[serde(rename = "startTime")]
+    start_time: String,
+    #[serde(rename = "endTime")]
+    end_time: String,
+    intervals: Vec<Interval>,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct Interval {
+    #[serde(rename = "startTime")]
+    start_time: String,
+    values: Values,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct Values {
+    temperature: f64,
+    #[serde(rename = "temperatureApparent")]
+    temperature_apparent: f64,
+    humidity: f64,
+    #[serde(rename = "windSpeed")]
+    wind_speed: f64,
+    #[serde(rename = "precipitationIntensity")]
+    precipitation_intensity: f64,
 }
 
 lazy_static! {
@@ -69,7 +93,7 @@ async fn metrics_handler() -> std::result::Result<impl Reply, Rejection> {
 async fn gather_weather_metrics() {
     let opt = Opt::from_args();
 
-    let climacell_url = format!("https://api.climacell.co/v3/weather/realtime?lat={}&lon={}&unit_system=si&fields[]=temp&fields[]=feels_like&fields[]=humidity&fields[]=wind_speed&fields[]=precipitation&apikey={}", opt.lat, opt.lon, opt.token);
+    let climacell_url = format!("https://api.tomorrow.io/v4/timelines?location={},{}&fields=temperature&fields=temperatureApparent&fields=humidity&fields=windSpeed&fields=precipitationIntensity&apikey={}&timesteps=current", opt.lat, opt.lon, opt.token);
 
     let client = reqwest::Client::new();
 
@@ -87,7 +111,7 @@ async fn gather_weather_metrics() {
         Ok(body) => body,
     };
 
-    let json: ClimacellResponse = match body.json().await {
+    let json: TomorrowWeatherApiResponse = match body.json().await {
         Err(e) => {
             SCRAPE_STATE.set(0.0);
             println!("Error converting to JSON: {}", e);
@@ -96,14 +120,22 @@ async fn gather_weather_metrics() {
         Ok(json) => json,
     };
 
-    // worked
-    SCRAPE_STATE.set(1.0);
+    if json.data.timelines.len() < 1 {
+        SCRAPE_STATE.set(0.0);
+    } else {
+        if json.data.timelines[0].intervals.len() < 1 {
+            SCRAPE_STATE.set(0.0);
+        } else {
+            let weather_data = json.data.timelines[0].intervals[0].values.clone();
+            SCRAPE_STATE.set(1.0);
 
-    TEMPERATURE.set(json.temp.value);
-    TEMPERATURE_FEELS_LIKE.set(json.feels_like.value);
-    WIND_SPEED.set(json.wind_speed.value);
-    HUMIDITY.set(json.humidity.value);
-    PRECIPITATION.set(json.precipitation.value);
+            TEMPERATURE.set(weather_data.temperature);
+            TEMPERATURE_FEELS_LIKE.set(weather_data.temperature_apparent);
+            WIND_SPEED.set(weather_data.wind_speed);
+            HUMIDITY.set(weather_data.humidity);
+            PRECIPITATION.set(weather_data.precipitation_intensity);
+        }
+    }
 }
 
 #[tokio::main]

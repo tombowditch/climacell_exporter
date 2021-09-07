@@ -1,11 +1,12 @@
 # climacell_exporter
 
-Prometheus exporter for Climacell
+Prometheus exporter for Tomorrow.io (previously known as Climacell)
+(The name of the exporter has not been updated to allow for backwards compatibility)
 
 # Usage
 
 ```
-./climacell_exporter --token <climacell token> -lat <latitude> -lon <longitude>
+./climacell_exporter --token <tomorrow.io api v4 token> -lat <latitude> -lon <longitude>
 ```
 
 # Environment variables
