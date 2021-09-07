@@ -3,6 +3,10 @@
 Prometheus exporter for Tomorrow.io (previously known as Climacell)
 (The name of the exporter has not been updated to allow for backwards compatibility)
 
+# Docker
+
+https://github.com/users/tombowditch/packages/container/package/climacell_exporter
+
 # Usage
 
 ```
